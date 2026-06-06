@@ -1,7 +1,12 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+import subprocess
+import json
+import sys
 
 app = FastAPI()
+
+VIKI_SCRIPT = "viki_ecom_v80_real_intelligence(91).py"
 
 class RunRequest(BaseModel):
     run_mode: str = "discover"
@@ -22,14 +27,33 @@ def health():
 
 @app.post("/run")
 def run_viki(payload: RunRequest):
+    if payload.feedback_event:
+        return {
+            "status": "success",
+            "message": "VIKI Brain feedback received",
+            "feedback": payload.model_dump()
+        }
+
+    cmd = [
+        sys.executable,
+        VIKI_SCRIPT,
+        "--mode",
+        payload.run_mode,
+        "--discover-count",
+        str(payload.discover_count),
+    ]
+
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=120
+    )
+
     return {
-        "status": "success",
-        "message": "VIKI Brain received run request",
-        "run_mode": payload.run_mode,
-        "discover_count": payload.discover_count,
-        "feedback_event": payload.feedback_event,
-        "product_title": payload.product_title,
-        "score": payload.score,
-        "action": payload.action,
-        "reason": payload.reason
+        "status": "success" if result.returncode == 0 else "error",
+        "message": "VIKI script executed",
+        "returncode": result.returncode,
+        "stdout": result.stdout,
+        "stderr": result.stderr
     }
