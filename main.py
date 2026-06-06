@@ -52,7 +52,6 @@ def run_viki(payload: RunRequest):
         VIKI_SCRIPT,
         "--discover",
         str(payload.discover_count),
-        "--dry-run",
         "--no-shopify-payloads"
     ]
 
